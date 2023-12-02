@@ -1,0 +1,18 @@
+{
+    "name": "dynoser/proxier",
+    "description": "Performs an HTTP request by copying the original request headers and replacing some of them",
+    "keywords": ["webproxy", "proxy", "HTTP"],
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "AlexanderJer",
+            "email": "alexierusalim@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "classmap": ["src/Proxier.php"]
+    }
+}
