@@ -1,10 +1,16 @@
 <?php
 namespace dynoser\webtools;
 
-class Proxier {
+class Proxier
+{
     public $url = '';
     public $repHeadArr = [];
+
     public function __construct($urlB64, $repHeadersB64 = '') {
+        $this->setParams($urlB64, $repHeadersB64);
+    }
+
+    public function setParams($urlB64, $repHeadersB64 = '') {
         $this->url = self::base64Udecode($urlB64);
         if ($repHeadersB64) {
             $repHeadersStr = self::base64Udecode($repHeadersB64);
@@ -13,9 +19,28 @@ class Proxier {
             }
         }
     }
+
     public static function base64Udecode($str) {
         return \base64_decode(\strtr($str, '-_', '+/'));
     }
+
+    public static function base64Uencode($str) {
+        $enc = \base64_encode($str);
+        return \rtrim(\strtr($enc, '+/', '-_'), '=');
+    }
+    
+    public static function makeUrlPar($url, $repHeadersArr = []) {
+        if (!filter_var($url, \FILTER_VALIDATE_URL)) {
+            die('Invalid URL');
+        }
+        $urlB64 = self::base64Uencode($url);
+        $result = 'url=' . $urlB64;
+        if ($repHeadersArr && \is_array($repHeadersArr)) {
+            $result .= '&rep=' . self::base64Uencode(json_encode($repHeadersArr));
+        }
+        return $result;
+    }
+
     public function run() {
         if (empty($this->url)) {
             die('URL parameter is required');
