@@ -140,10 +140,10 @@ class Proxier
         echo $body;
         
         // --- begin cache ---
-        if ($cacheFullFile) {
-            $fd = fopen($cacheFullFile, 'wb');
-            fwrite($fd, $httpCode . "\r\n");
-            fwrite($fd, $response);
+        if ($cacheFullFile && ($httpCode == '200')) {
+            $fd = \fopen($cacheFullFile, 'wb');
+            \fwrite($fd, $httpCode . "\r\n");
+            \fwrite($fd, $response);
         }
         // --- end of cache ---
     }
