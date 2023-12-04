@@ -26,8 +26,8 @@ class Proxier
         }
         if ($cacheTimeSec && \is_numeric($cacheTimeSec)) {
             $this->cacheTimeSec = (int)$cacheTimeSec;
-            $this->cacheShortName = \substr(\hash('sha256', $urlB64 . $repHeadersB64), -15);
         }
+        $this->cacheShortName = \substr(\hash('sha256', $urlB64 . $repHeadersB64), -15);
     }
 
     public static function base64Udecode($str) {
