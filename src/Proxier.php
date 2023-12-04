@@ -150,4 +150,34 @@ class Proxier
         }
         // --- end of cache ---
     }
+    
+    public function clearOldCache($maxAgeSec = 3600)
+    {
+        if ($this->cacheBaseDir && \is_dir($this->cacheBaseDir)) {
+            $dirHandle = \opendir($this->cacheBaseDir);
+            if ($dirHandle) {
+                while (($file = \readdir($dirHandle))) {
+                    if (\ctype_xdigit($file)) {
+                        $filePath = $this->cacheBaseDir . '/' . $file;
+                        if (\filemtime($filePath) < \time() - $maxAgeSec) {
+                            unlink($filePath);
+                        }
+                    }
+                }
+
+                \closedir($dirHandle);
+            }
+        }
+    }
+
+    public function removeCachePeriodically($intervalSec = 600, $maxAgeSec = 3600)
+    {
+        if ($this->cacheBaseDir) {
+            $lastCheckFile = $this->cacheBaseDir . '/lastcheck';
+            if (!\file_exists($lastCheckFile) || (\filemtime($lastCheckFile) <= \time() - $intervalSec)) {
+                \touch($lastCheckFile);
+                $this->clearOldCache($maxAgeSec);
+            }
+        }
+    }
 }
