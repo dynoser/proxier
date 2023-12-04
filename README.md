@@ -51,6 +51,10 @@ if (!empty($cacheBaseDir)) {
 // run required
 $p->run();
 
+// remove old-cache-data periodicaly
+//   (or you may call this fuction by cron instead)
+$p->removeCachePeriodically();
+
 ```
 
 #### Remote call:
