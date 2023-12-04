@@ -10,13 +10,13 @@ class Proxier
 
     public $cacheShortName = '';  // hex-hash from (URL . repHead)
     public $cacheBaseDir = ''; // set by ->setCacheBaseDir(...)
-    public $cacheTimeSec  = 3600; // default value is 1 hour
+    public $cacheSec  = 3600; // default value is 1 hour (cache will work only if ->cacheBaseDir not empty)
 
-    public function __construct($urlB64, $repHeadersB64 = '', $cacheTimeSec = 0) {
-        $this->setParams($urlB64, $repHeadersB64, $cacheTimeSec);
+    public function __construct($urlB64, $repHeadersB64 = '', $cacheSec = 0) {
+        $this->setParams($urlB64, $repHeadersB64, $cacheSec);
     }
 
-    public function setParams($urlB64, $repHeadersB64 = '', $cacheTimeSec = 0) {
+    public function setParams($urlB64, $repHeadersB64 = '', $cacheSec = 0) {
         $this->url = self::base64Udecode($urlB64);
         if ($repHeadersB64) {
             $repHeadersStr = self::base64Udecode($repHeadersB64);
@@ -24,8 +24,8 @@ class Proxier
                 $this->repHeadArr = \json_decode($repHeadersStr, true);
             }
         }
-        if ($cacheTimeSec && \is_numeric($cacheTimeSec)) {
-            $this->cacheTimeSec = (int)$cacheTimeSec;
+        if ($cacheSec && \is_numeric($cacheSec)) {
+            $this->cacheSec = (int)$cacheSec;
         }
         $this->cacheShortName = \substr(\hash('sha256', $urlB64 . $repHeadersB64), -15);
     }
@@ -39,7 +39,7 @@ class Proxier
         return \rtrim(\strtr($enc, '+/', '-_'), '=');
     }
     
-    public static function makeUrlPar($url, $repHeadersArr = []) {
+    public static function makeUrlPar($url, $repHeadersArr = [], $cacheSec = 0) {
         if (!filter_var($url, \FILTER_VALIDATE_URL)) {
             die('Invalid URL');
         }
@@ -47,6 +47,9 @@ class Proxier
         $result = 'url=' . $urlB64;
         if ($repHeadersArr && \is_array($repHeadersArr)) {
             $result .= '&rep=' . self::base64Uencode(json_encode($repHeadersArr));
+        }
+        if ($cacheSec && \is_numeric($cacheSec)) {
+            $result .= '&cachesec=' . $cacheSec;
         }
         return self::$leftURL . $result;
     }
@@ -70,11 +73,11 @@ class Proxier
         }
         
         // --- begin cache ---
-        $cacheFullFile = ($this->cacheBaseDir && $this->cacheTimeSec) ? ($this->cacheBaseDir . '/' . $this->cacheShortName) : null;
+        $cacheFullFile = ($this->cacheBaseDir && $this->cacheSec) ? ($this->cacheBaseDir . '/' . $this->cacheShortName) : null;
         if ($cacheFullFile && \is_file($cacheFullFile)) {
             $fileLastModified = \filemtime($cacheFullFile);
             $currentTime = \time();
-            if (($currentTime - $fileLastModified) <= $this->cacheTimeSec) {
+            if (($currentTime - $fileLastModified) <= $this->cacheSec) {
                 $response = \file_get_contents($cacheFullFile);
                 list($headersIn, $body) = \explode("\r\n\r\n", $response, 2);
                 foreach (\explode("\r\n", $headersIn) as $n => $hdr) {
