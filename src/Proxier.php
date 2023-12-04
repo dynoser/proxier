@@ -4,19 +4,29 @@ namespace dynoser\webtools;
 class Proxier
 {
     public $url = '';
-    public $repHeadArr = [];
+    public $repHeadArr = []; // to replace request-headers
+    
+    public static $leftURL = ''; // for makeUrlPar only
 
-    public function __construct($urlB64, $repHeadersB64 = '') {
-        $this->setParams($urlB64, $repHeadersB64);
+    public $cacheShortName = '';  // hex-hash from (URL . repHead)
+    public $cacheBaseDir = ''; // set by ->setCacheBaseDir(...)
+    public $cacheTimeSec  = 3600; // default value is 1 hour
+
+    public function __construct($urlB64, $repHeadersB64 = '', $cacheTimeSec = 0) {
+        $this->setParams($urlB64, $repHeadersB64, $cacheTimeSec);
     }
 
-    public function setParams($urlB64, $repHeadersB64 = '') {
+    public function setParams($urlB64, $repHeadersB64 = '', $cacheTimeSec = 0) {
         $this->url = self::base64Udecode($urlB64);
         if ($repHeadersB64) {
             $repHeadersStr = self::base64Udecode($repHeadersB64);
             if ($repHeadersStr) {
                 $this->repHeadArr = \json_decode($repHeadersStr, true);
             }
+        }
+        if ($cacheTimeSec && \is_numeric($cacheTimeSec)) {
+            $this->cacheTimeSec = (int)$cacheTimeSec;
+            $this->cacheShortName = \substr(\hash('sha256', $urlB64 . $repHeadersB64), -15);
         }
     }
 
@@ -38,7 +48,14 @@ class Proxier
         if ($repHeadersArr && \is_array($repHeadersArr)) {
             $result .= '&rep=' . self::base64Uencode(json_encode($repHeadersArr));
         }
-        return $result;
+        return self::$leftURL . $result;
+    }
+    
+    public function setCacheBaseDir($cacheBaseDir, $checkDir = true) {
+        $this->cacheBaseDir = \rtrim(\strtr($cacheBaseDir, '\\', '/'), '/');
+        if ($checkDir && !\is_dir($this->cacheBaseDir)) {
+            throw new \Exception("cacheBaseDir not exist: " . $this->cacheBaseDir);
+        }
     }
 
     public function run() {
@@ -51,6 +68,27 @@ class Proxier
         if (!\is_array($this->repHeadArr)) {
             die('Invalid REP');
         }
+        
+        // --- begin cache ---
+        $cacheFullFile = ($this->cacheBaseDir && $this->cacheTimeSec) ? ($this->cacheBaseDir . '/' . $this->cacheShortName) : null;
+        if ($cacheFullFile && \is_file($cacheFullFile)) {
+            $fileLastModified = \filemtime($cacheFullFile);
+            $currentTime = \time();
+            if (($currentTime - $fileLastModified) <= $this->cacheTimeSec) {
+                $response = \file_get_contents($cacheFullFile);
+                list($headersIn, $body) = \explode("\r\n\r\n", $response, 2);
+                foreach (\explode("\r\n", $headersIn) as $n => $hdr) {
+                    if ($n) {
+                        \header($hdr);
+                    } else {
+                        \http_response_code($hdr);
+                    }
+                }
+                echo $body;
+                die;
+            }
+        }
+        // --- end of cache ---
 
         $remoteDomain = \parse_url($this->url, \PHP_URL_HOST);
 
@@ -100,5 +138,13 @@ class Proxier
         }
 
         echo $body;
+        
+        // --- begin cache ---
+        if ($cacheFullFile) {
+            $fd = fopen($cacheFullFile, 'wb');
+            fwrite($fd, $httpCode . "\r\n");
+            fwrite($fd, $response);
+        }
+        // --- end of cache ---
     }
 }
