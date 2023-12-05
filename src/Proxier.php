@@ -109,6 +109,7 @@ class Proxier
 
         \curl_setopt($ch, \CURLOPT_URL, $this->url);
         \curl_setopt($ch, \CURLOPT_RETURNTRANSFER, true);
+        \curl_setopt($ch, \CURLOPT_FOLLOWLOCATION, true);
         \curl_setopt($ch, \CURLOPT_HEADER, true);
 
         $headers = [];
