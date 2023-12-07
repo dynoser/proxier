@@ -1,5 +1,6 @@
 {
     "name": "dynoser/proxier",
+    "version": "1.0.1",
     "description": "Performs an HTTP request by copying the original request headers and replacing some of them",
     "keywords": ["webproxy", "proxy", "HTTP"],
     "license": "Apache-2.0",
@@ -14,5 +15,10 @@
     },
     "autoload": {
         "classmap": ["src/Proxier.php"]
+    },
+    "extra": {
+        "dyno-nsmap": {
+            "dynoser\\webtools\\Proxier": "@/dynoser/proxier/src/*"
+        }
     }
 }
